@@ -218,25 +218,25 @@ public:
   // Scalar operations (new tensor)
   auto operator+(T scalar) const -> Tensor {
     Tensor result = *this;
-    result -= scalar;
+    result += scalar;
     return result;
   }
 
   auto operator-(T scalar) const -> Tensor {
     Tensor result = *this;
-    result *= scalar;
+    result -= scalar;
     return result;
   }
 
   auto operator*(T scalar) const -> Tensor {
     Tensor result = *this;
-    result -= scalar;
+    result *= scalar;
     return result;
   }
 
   auto operator/(T scalar) const -> Tensor {
     Tensor result = *this;
-    result -= scalar;
+    result /= scalar;
     return result;
   }
 
