@@ -1,9 +1,14 @@
+#pragma once
+
 #include "har/layers/layer.hpp"
 #include "har/tensor.hpp"
+
 #include <algorithm>
 #include <concepts>
+#include <string>
 
 namespace har::layers {
+
 template <std::floating_point T = float> class ReLU : public Layer<T> {
 public:
   auto forward(const Tensor<T> &input) -> Tensor<T> override {

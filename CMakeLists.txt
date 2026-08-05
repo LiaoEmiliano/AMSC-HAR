@@ -14,32 +14,44 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-add_compile_options(
-    -Wall
-    -Wextra
-    -Wpedantic
-    -Werror=return-type
-)
+if(MSVC)
+    add_compile_options(/W4 /permissive-)
+else()
+    add_compile_options(
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Werror=return-type
+    )
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+option(HAR_WITH_OPENCV "Enable OpenCV video frame extraction" ON)
 
-# Include directories
-include_directories(
+add_executable(har_cnn main.cpp)
+target_include_directories(har_cnn PRIVATE
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/third_party
 )
 
-# Main executable (header-only library, just build main)
-add_executable(har_cnn main.cpp)
+if(HAR_WITH_OPENCV)
+    find_package(OpenCV QUIET COMPONENTS core imgproc imgcodecs videoio)
+    if(OpenCV_FOUND)
+        target_compile_definitions(har_cnn PRIVATE HAR_HAS_OPENCV=1)
+        target_include_directories(har_cnn PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries(har_cnn PRIVATE ${OpenCV_LIBS})
+        message(STATUS "OpenCV found: ${OpenCV_VERSION}")
+    else()
+        message(WARNING "OpenCV not found; video extraction disabled. Install OpenCV or set HAR_WITH_OPENCV=OFF.")
+    endif()
+endif()
 
-# Tests 
 option(BUILD_TESTS "Build tests" OFF)
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
 
-# Installation
 install(TARGETS har_cnn DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include)

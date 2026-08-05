@@ -1,13 +1,16 @@
+#pragma once
+
 #include "har/tensor.hpp"
+
 #include <concepts>
+#include <string>
+
 namespace har::loss {
 
-// Base loss function interface
 template <std::floating_point T = float> class Loss {
 public:
   virtual ~Loss() = default;
 
-  // Compute loss value
   virtual auto forward(const Tensor<T> &predictions, const Tensor<T> &targets)
       -> T = 0;
 
@@ -20,4 +23,4 @@ protected:
   Tensor<T> targets_cache_;
 };
 
-}; // namespace har::loss
+} // namespace har::loss
