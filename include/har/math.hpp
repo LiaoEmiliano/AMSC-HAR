@@ -1,10 +1,15 @@
+#pragma once
+
 #include "har/tensor.hpp"
+
+#include <concepts>
 #include <stdexcept>
+
 namespace har::math {
-template <std::floating_point T>
 
 // Matrix multiplication: C = A @ B
 // A: [M, K], B: [K, N] -> C: [M, N]
+template <std::floating_point T>
 auto matmul(const Tensor<T> &a, const Tensor<T> &b) -> Tensor<T> {
   if (a.dims() != 2 || b.dims() != 2) {
     throw std::invalid_argument("matmul requires 2D tensors");
@@ -22,7 +27,7 @@ auto matmul(const Tensor<T> &a, const Tensor<T> &b) -> Tensor<T> {
 
   for (size_t i = 0; i < M; ++i) {
     for (size_t k = 0; k < K; ++k) {
-      T a_ik = a.at(i, k);
+      const T a_ik = a.at(i, k);
       for (size_t j = 0; j < N; ++j) {
         c.at(i, j) += a_ik * b.at(k, j);
       }
@@ -32,7 +37,6 @@ auto matmul(const Tensor<T> &a, const Tensor<T> &b) -> Tensor<T> {
   return c;
 }
 
-// Vector dot product
 template <std::floating_point T>
 auto dot(const Tensor<T> &a, const Tensor<T> &b) -> T {
   if (a.dims() != 1 || b.dims() != 1 || a.size() != b.size()) {
@@ -40,16 +44,14 @@ auto dot(const Tensor<T> &a, const Tensor<T> &b) -> T {
   }
 
   T result{0};
-
   for (size_t i = 0; i < a.size(); ++i) {
     result += a[i] * b[i];
   }
-
   return result;
 }
 
-// Outer product: a @ b
-// a: [M], b: [N] -> result: [M, N]
+// Outer product: a ⊗ b
+// a: [M], b: [N] -> [M, N]
 template <std::floating_point T>
 auto outer(const Tensor<T> &a, const Tensor<T> &b) -> Tensor<T> {
   if (a.dims() != 1 || b.dims() != 1) {
@@ -63,6 +65,25 @@ auto outer(const Tensor<T> &a, const Tensor<T> &b) -> Tensor<T> {
   for (size_t i = 0; i < M; ++i) {
     for (size_t j = 0; j < N; ++j) {
       result.at(i, j) = a[i] * b[j];
+    }
+  }
+
+  return result;
+}
+
+template <std::floating_point T>
+auto transpose(const Tensor<T> &a) -> Tensor<T> {
+  if (a.dims() != 2) {
+    throw std::invalid_argument("transpose requires 2D tensor");
+  }
+
+  const size_t rows = a.shape()[0];
+  const size_t cols = a.shape()[1];
+  Tensor<T> result({cols, rows});
+
+  for (size_t i = 0; i < rows; ++i) {
+    for (size_t j = 0; j < cols; ++j) {
+      result.at(j, i) = a.at(i, j);
     }
   }
 

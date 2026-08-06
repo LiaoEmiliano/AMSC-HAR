@@ -138,7 +138,6 @@ public:
   void fill(T value) { std::ranges::fill(data_, value); }
   void zero() { fill(T{0}); }
 
-  // Element-wise operations (in-place)
   auto operator+=(const Tensor &other) -> Tensor & {
     if (shape_ != other.shape_) {
       throw std::invalid_argument("Shape mismatch for addition");
@@ -191,7 +190,6 @@ public:
     return *this;
   }
 
-  // Element-wise operations (new tensor)
   auto operator+(const Tensor &other) const -> Tensor {
     Tensor result = *this;
     result += other;
@@ -215,7 +213,6 @@ public:
     return result;
   }
 
-  // Scalar operations (new tensor)
   auto operator+(T scalar) const -> Tensor {
     Tensor result = *this;
     result += scalar;
@@ -273,7 +270,6 @@ public:
   }
 };
 
-// Free function scalar operations (scalar on left)
 template <std::floating_point T>
 auto operator+(T scalar, const Tensor<T> &tensor) -> Tensor<T> {
   return tensor + scalar;
