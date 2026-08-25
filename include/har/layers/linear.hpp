@@ -7,6 +7,7 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 namespace har::layers {
 
@@ -31,6 +32,16 @@ public:
     this->output_ = math::matmul(input, weight_.data);
 
     if (use_bias_) {
+#ifdef HAR_HAS_CUDA
+      if constexpr (std::is_same_v<T, float>) {
+        if (input.device() == Device::CUDA && cuda_ops::active()) {
+          cuda_ops::add_bias_rows(this->output_.data(), bias_.data.data(),
+                                  static_cast<int>(input.shape()[0]),
+                                  static_cast<int>(out_features_));
+          return this->output_;
+        }
+      }
+#endif
       const size_t batch = input.shape()[0];
       for (size_t i = 0; i < batch; ++i) {
         for (size_t j = 0; j < out_features_; ++j) {
@@ -47,6 +58,16 @@ public:
     weight_.grad += math::matmul(math::transpose(this->input_cache_), grad_output);
 
     if (use_bias_) {
+#ifdef HAR_HAS_CUDA
+      if constexpr (std::is_same_v<T, float>) {
+        if (grad_output.device() == Device::CUDA && cuda_ops::active()) {
+          cuda_ops::bias_grad(grad_output.data(), bias_.grad.data(),
+                              static_cast<int>(grad_output.shape()[0]),
+                              static_cast<int>(out_features_));
+          return math::matmul(grad_output, math::transpose(weight_.data));
+        }
+      }
+#endif
       const size_t batch = grad_output.shape()[0];
       for (size_t i = 0; i < batch; ++i) {
         for (size_t j = 0; j < out_features_; ++j) {
@@ -79,9 +100,11 @@ private:
     static thread_local std::mt19937 gen{std::random_device{}()};
     std::uniform_real_distribution<T> dist(-limit, limit);
 
+    weight_.data.sync();
     for (size_t i = 0; i < weight_.data.size(); ++i) {
       weight_.data[i] = dist(gen);
     }
+    weight_.data.sync();
     weight_.grad.zero();
     if (use_bias_) {
       bias_.data.zero();

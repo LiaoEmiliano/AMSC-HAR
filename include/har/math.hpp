@@ -4,6 +4,7 @@
 
 #include <concepts>
 #include <stdexcept>
+#include <type_traits>
 
 namespace har::math {
 
@@ -23,7 +24,17 @@ auto matmul(const Tensor<T> &a, const Tensor<T> &b) -> Tensor<T> {
     throw std::invalid_argument("matmul dimension mismatch");
   }
 
-  Tensor<T> c({M, N}, T{0});
+  Tensor<T> c({M, N}, T{0}, a.device());
+
+#ifdef HAR_HAS_CUDA
+  if constexpr (std::is_same_v<T, float>) {
+    if (a.device() == Device::CUDA && cuda_ops::active()) {
+      cuda_ops::matmul(a.data(), b.data(), c.data(), static_cast<int>(M),
+                       static_cast<int>(K), static_cast<int>(N));
+      return c;
+    }
+  }
+#endif
 
   for (size_t i = 0; i < M; ++i) {
     for (size_t k = 0; k < K; ++k) {
@@ -44,6 +55,8 @@ auto dot(const Tensor<T> &a, const Tensor<T> &b) -> T {
   }
 
   T result{0};
+  a.sync();
+  b.sync();
   for (size_t i = 0; i < a.size(); ++i) {
     result += a[i] * b[i];
   }
@@ -60,7 +73,9 @@ auto outer(const Tensor<T> &a, const Tensor<T> &b) -> Tensor<T> {
 
   const size_t M = a.size();
   const size_t N = b.size();
-  Tensor<T> result({M, N});
+  Tensor<T> result({M, N}, a.device());
+  a.sync();
+  b.sync();
 
   for (size_t i = 0; i < M; ++i) {
     for (size_t j = 0; j < N; ++j) {
@@ -79,7 +94,17 @@ auto transpose(const Tensor<T> &a) -> Tensor<T> {
 
   const size_t rows = a.shape()[0];
   const size_t cols = a.shape()[1];
-  Tensor<T> result({cols, rows});
+  Tensor<T> result({cols, rows}, a.device());
+
+#ifdef HAR_HAS_CUDA
+  if constexpr (std::is_same_v<T, float>) {
+    if (a.device() == Device::CUDA && cuda_ops::active()) {
+      cuda_ops::transpose(a.data(), result.data(), static_cast<int>(rows),
+                          static_cast<int>(cols));
+      return result;
+    }
+  }
+#endif
 
   for (size_t i = 0; i < rows; ++i) {
     for (size_t j = 0; j < cols; ++j) {

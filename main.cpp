@@ -1,9 +1,11 @@
 #include "har/har.hpp"
 
+#include <cctype>
 #include <cstdlib>
 #include <format>
 #include <iostream>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,28 +17,49 @@ void print_usage() {
       R"(Usage:
   har_cnn smoke
   har_cnn extract <video> [outdir]
-  har_cnn train --data <UCF11_root> [options]
+  har_cnn train [--dataset ucf101|ucf11] --data <root> [options]
+  har_cnn predict [--dir checkAcc] [--weights PATH] [--top K]
 
 Train options:
-  --data PATH         Path to UCF11_updated_mpg / action_youtube_naudio
-  --epochs N          Default: 5
-  --batch N           Default: 4
-  --lr FLOAT          Default: 0.01
+  --dataset NAME      ucf101 (default) or ucf11
+  --data PATH         Video root. Default: data/UCF-101 or data/UCF11_updated_mpg
+  --split N           UCF101 official split 1/2/3. Default: 1
+  --epochs N          Default: 10
+  --batch N           Default: 32 (auto-capped for large size/frames)
+  --workers N         Prefetch next batch on a background thread (0=off). Default: 8
+  --lr FLOAT          Default: 0.003
+  --lr-step N         Decay every N epochs. Default: 4 (0=off)
+  --lr-gamma FLOAT    Multiply lr at each step. Default: 0.5
+  --momentum FLOAT    Default: 0.9
+  --wd FLOAT          Weight decay. Default: 1e-4
+  --dropout FLOAT     Default: 0.3
   --size N            Input HxW (divisible by 4). Default: 64
-  --frames N          Frames averaged per video. Default: 8
-  --val-ratio FLOAT   Default: 0.2
+  --frames N          Frames kept per video (temporal dim). Default: 8
+  --val-ratio FLOAT   Default: 0.1 (from official train for UCF101)
+  --test-ratio FLOAT  UCF11 only. Default: 0.1
   --max-per-class N   Limit videos/class (0=all). Useful for dry runs
-  --no-cache          Disable frame cache under data/ucf11_cache
+  --no-cache          Disable decoded-clip cache
   --seed N            Default: 42
+  --weights PATH      Save checkpoint. Default: models/<dataset>_videocnn.harw
+  --resume PATH       Load checkpoint and continue training
+  --target-acc FLOAT  Stop when test accuracy reaches this (0.95 or 95). Off by default
+
+Predict options:
+  --dir PATH          Folder of videos to classify. Default: checkAcc
+  --weights PATH      Checkpoint to load. Default: models/ucf11_videocnn.harw
+  --top K             Print top-K classes. Default: 3
+
+Download UCF101 (recommended HAR dataset):
+  powershell -ExecutionPolicy Bypass -File scripts/download_ucf101.ps1
 
 Download UCF11:
-  https://www.crcv.ucf.edu/data/UCF_YouTube_Action.php
-  or run: scripts/download_ucf11.ps1
+  powershell -ExecutionPolicy Bypass -File scripts/download_ucf11.ps1
 )";
 }
 
 auto run_cnn_smoke_test() -> int {
   std::cout << "Smoke test: tiny CNN on synthetic NCHW images\n";
+  std::cout << std::format("Device: {}\n", har::device_name());
 
   constexpr size_t batch = 32;
   constexpr size_t epochs = 80;
@@ -82,6 +105,9 @@ auto run_cnn_smoke_test() -> int {
       }
     }
 
+    x.sync();
+    y.sync();
+
     model.zero_grad();
     auto logits = model.forward(x);
     const float loss = criterion.forward(logits, y);
@@ -101,6 +127,7 @@ auto run_cnn_smoke_test() -> int {
 
   model.eval();
   auto logits = model.forward(x);
+  logits.sync();
   size_t correct = 0;
   for (size_t i = 0; i < batch; ++i) {
     const size_t pred = logits.at(i, 0) > logits.at(i, 1) ? 0 : 1;
@@ -124,7 +151,6 @@ auto run_cnn_smoke_test() -> int {
   return 0;
 }
 
-#ifdef HAR_HAS_OPENCV
 auto run_extract_frames(const std::string &video_path,
                         const std::string &output_dir) -> int {
   har::data::FrameExtractOptions opt;
@@ -144,10 +170,17 @@ auto run_extract_frames(const std::string &video_path,
   return 0;
 }
 
-auto parse_train_args(int argc, char **argv, har::data::UCF11Options &data_opt,
-                      har::train::TrainConfig &train_opt, std::string &data_root)
-    -> bool {
-  data_root.clear();
+struct TrainCli {
+  std::string dataset{"ucf101"};
+  std::string data_root;
+  har::data::UCF11Options ucf11;
+  har::data::UCF101Options ucf101;
+  har::train::TrainConfig train;
+  bool weights_set{false};
+  bool help{false};
+};
+
+auto parse_train_args(int argc, char **argv, TrainCli &cli) -> void {
   for (int i = 2; i < argc; ++i) {
     const std::string_view arg = argv[i];
     auto need = [&](const char *name) -> std::string {
@@ -157,66 +190,159 @@ auto parse_train_args(int argc, char **argv, har::data::UCF11Options &data_opt,
       return argv[++i];
     };
 
-    if (arg == "--data") {
-      data_root = need("--data");
+    if (arg == "--dataset") {
+      cli.dataset = need("--dataset");
+    } else if (arg == "--data") {
+      cli.data_root = need("--data");
+    } else if (arg == "--split") {
+      cli.ucf101.split = std::stoi(need("--split"));
     } else if (arg == "--epochs") {
-      train_opt.epochs = static_cast<size_t>(std::stoul(need("--epochs")));
+      cli.train.epochs = static_cast<size_t>(std::stoul(need("--epochs")));
     } else if (arg == "--batch") {
-      train_opt.batch_size = static_cast<size_t>(std::stoul(need("--batch")));
+      cli.train.batch_size = static_cast<size_t>(std::stoul(need("--batch")));
+    } else if (arg == "--workers") {
+      cli.train.num_workers = static_cast<size_t>(std::stoul(need("--workers")));
     } else if (arg == "--lr") {
-      train_opt.learning_rate = std::stof(need("--lr"));
+      cli.train.learning_rate = std::stof(need("--lr"));
+    } else if (arg == "--lr-step") {
+      cli.train.lr_step = static_cast<size_t>(std::stoul(need("--lr-step")));
+    } else if (arg == "--lr-gamma") {
+      cli.train.lr_gamma = std::stof(need("--lr-gamma"));
+    } else if (arg == "--momentum") {
+      cli.train.momentum = std::stof(need("--momentum"));
+    } else if (arg == "--wd") {
+      cli.train.weight_decay = std::stof(need("--wd"));
+    } else if (arg == "--dropout") {
+      cli.train.dropout = std::stof(need("--dropout"));
     } else if (arg == "--size") {
       const int s = std::stoi(need("--size"));
-      data_opt.frames.width = s;
-      data_opt.frames.height = s;
+      cli.ucf11.frames.width = s;
+      cli.ucf11.frames.height = s;
+      cli.ucf101.frames.width = s;
+      cli.ucf101.frames.height = s;
     } else if (arg == "--frames") {
-      data_opt.frames.max_frames = std::stoi(need("--frames"));
+      const int n = std::stoi(need("--frames"));
+      cli.ucf11.frames.max_frames = n;
+      cli.ucf101.frames.max_frames = n;
     } else if (arg == "--val-ratio") {
-      data_opt.val_ratio = std::stof(need("--val-ratio"));
+      const float v = std::stof(need("--val-ratio"));
+      cli.ucf11.val_ratio = v;
+      cli.ucf101.val_ratio = v;
+    } else if (arg == "--test-ratio") {
+      cli.ucf11.test_ratio = std::stof(need("--test-ratio"));
     } else if (arg == "--max-per-class") {
-      data_opt.max_per_class =
-          static_cast<size_t>(std::stoul(need("--max-per-class")));
+      const auto n = static_cast<size_t>(std::stoul(need("--max-per-class")));
+      cli.ucf11.max_per_class = n;
+      cli.ucf101.max_per_class = n;
     } else if (arg == "--no-cache") {
-      data_opt.use_cache = false;
+      cli.ucf11.use_cache = false;
+      cli.ucf101.use_cache = false;
     } else if (arg == "--seed") {
       const auto seed = static_cast<unsigned>(std::stoul(need("--seed")));
-      data_opt.seed = seed;
-      train_opt.seed = seed;
+      cli.ucf11.seed = seed;
+      cli.ucf101.seed = seed;
+      cli.train.seed = seed;
+    } else if (arg == "--weights") {
+      cli.train.weights_path = need("--weights");
+      cli.weights_set = true;
+    } else if (arg == "--resume") {
+      cli.train.resume_path = need("--resume");
+    } else if (arg == "--target-acc") {
+      float v = std::stof(need("--target-acc"));
+      if (v > 1.0f) {
+        v *= 0.01f;
+      }
+      cli.train.target_test_acc = v;
     } else if (arg == "--help" || arg == "-h") {
-      return false;
+      cli.help = true;
     } else {
       throw std::runtime_error("Unknown argument: " + std::string(arg));
     }
   }
-  return !data_root.empty();
 }
 
 auto run_train(int argc, char **argv) -> int {
-  har::data::UCF11Options data_opt;
-  har::train::TrainConfig train_opt;
-  // CPU-friendly defaults for the naive Conv2D implementation.
-  data_opt.frames.width = 64;
-  data_opt.frames.height = 64;
-  data_opt.frames.max_frames = 8;
-  train_opt.epochs = 5;
-  train_opt.batch_size = 4;
-  train_opt.learning_rate = 0.01f;
+  TrainCli cli;
+  cli.ucf11.frames.width = 64;
+  cli.ucf11.frames.height = 64;
+  cli.ucf11.frames.max_frames = 8;
+  cli.ucf101.frames.width = 64;
+  cli.ucf101.frames.height = 64;
+  cli.ucf101.frames.max_frames = 8;
+  cli.train.epochs = 10;
+  cli.train.batch_size = 32;
+  cli.train.num_workers = 8;
+  cli.train.learning_rate = 0.003f;
 
-  std::string data_root;
-  if (!parse_train_args(argc, argv, data_opt, train_opt, data_root)) {
+  parse_train_args(argc, argv, cli);
+  if (cli.help) {
     print_usage();
     return 1;
   }
 
-  har::data::UCF11Dataset dataset(data_root, data_opt);
-  return har::train::train_ucf11(dataset, train_opt);
+  std::string dataset = cli.dataset;
+  for (char &c : dataset) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+
+  if (cli.data_root.empty()) {
+    cli.data_root = (dataset == "ucf11") ? "data/UCF11_updated_mpg" : "data";
+  }
+  if (!cli.weights_set) {
+    cli.train.weights_path = (dataset == "ucf11")
+                                 ? "models/ucf11_videocnn.harw"
+                                 : "models/ucf101_videocnn.harw";
+  }
+
+  if (dataset == "ucf11") {
+    har::data::UCF11Dataset ds(cli.data_root, cli.ucf11);
+    return har::train::train_video_cnn(ds, cli.train, "UCF11");
+  }
+  if (dataset == "ucf101") {
+    har::data::UCF101Dataset ds(cli.data_root, cli.ucf101);
+    return har::train::train_video_cnn(ds, cli.train, "UCF101");
+  }
+  throw std::runtime_error("Unknown dataset: " + cli.dataset +
+                           " (expected ucf101 or ucf11)");
 }
-#endif
+
+auto run_predict(int argc, char **argv) -> int {
+  har::train::PredictConfig cfg;
+  for (int i = 2; i < argc; ++i) {
+    const std::string_view arg = argv[i];
+    auto need = [&](const char *name) -> std::string {
+      if (i + 1 >= argc) {
+        throw std::runtime_error(std::string("Missing value for ") + name);
+      }
+      return argv[++i];
+    };
+    if (arg == "--dir" || arg == "--data") {
+      cfg.dir = need("--dir");
+    } else if (arg == "--weights") {
+      cfg.weights_path = need("--weights");
+    } else if (arg == "--top") {
+      cfg.top_k = static_cast<size_t>(std::stoul(need("--top")));
+      if (cfg.top_k == 0) {
+        throw std::runtime_error("--top must be >= 1");
+      }
+    } else if (arg == "--help" || arg == "-h") {
+      print_usage();
+      return 0;
+    } else {
+      throw std::runtime_error("Unknown argument: " + std::string(arg));
+    }
+  }
+  return har::train::run_predict(cfg);
+}
 
 } // namespace
 
 int main(int argc, char **argv) {
+  std::cout << std::unitbuf;
+  std::cerr << std::unitbuf;
   std::cout << "Human Action Recognition using CNN\n";
+  std::cout << std::format("Compute device: {}\n", har::device_name());
+  std::cout << std::format("Video decoder: {}\n", har::data::video_decoder_name());
 
   if (argc < 2) {
     print_usage();
@@ -232,7 +358,6 @@ int main(int argc, char **argv) {
       print_usage();
       return 0;
     }
-#ifdef HAR_HAS_OPENCV
     if (cmd == "extract") {
       if (argc < 3) {
         print_usage();
@@ -244,19 +369,14 @@ int main(int argc, char **argv) {
     if (cmd == "train") {
       return run_train(argc, argv);
     }
-#else
-    if (cmd == "extract" || cmd == "train") {
-      std::cerr << "Built without OpenCV. Rebuild with OpenCV enabled.\n";
-      return 1;
+    if (cmd == "predict" || cmd == "check") {
+      return run_predict(argc, argv);
     }
-#endif
     // Backward compatible: har_cnn <video> [outdir]
-#ifdef HAR_HAS_OPENCV
     if (argc >= 2) {
       const std::string out_dir = (argc >= 3) ? argv[2] : "data/frames";
       return run_extract_frames(argv[1], out_dir);
     }
-#endif
     print_usage();
     return 1;
   } catch (const std::exception &ex) {

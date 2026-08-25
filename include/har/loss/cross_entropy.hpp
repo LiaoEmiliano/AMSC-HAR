@@ -25,10 +25,12 @@ public:
 
     this->predictions_cache_ = predictions;
     this->targets_cache_ = targets;
+    predictions.sync();
+    targets.sync();
 
     const size_t batch = predictions.shape()[0];
     const size_t classes = predictions.shape()[1];
-    probs_ = Tensor<T>({batch, classes});
+    probs_ = Tensor<T>({batch, classes}, Device::CPU);
 
     T total{0};
     for (size_t i = 0; i < batch; ++i) {
@@ -67,7 +69,9 @@ public:
       grad.at(i, cls) -= T{1};
     }
 
-    return grad * (T{1} / static_cast<T>(batch));
+    auto scaled = grad * (T{1} / static_cast<T>(batch));
+    scaled.to_(this->predictions_cache_.device());
+    return scaled;
   }
 
   auto name() const -> std::string override { return "CrossEntropyLoss"; }

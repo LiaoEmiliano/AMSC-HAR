@@ -2,10 +2,12 @@
 
 #include "har/layers/layer.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace har::layers {
@@ -48,7 +50,26 @@ public:
     const size_t H_out = out_dim(H, pad_h_, kernel_h_, stride_h_);
     const size_t W_out = out_dim(W, pad_w_, kernel_w_, stride_w_);
 
-    this->output_ = Tensor<T>({N, out_channels_, H_out, W_out}, T{0});
+    this->output_ = Tensor<T>({N, out_channels_, H_out, W_out}, T{0},
+                              input.device());
+
+#ifdef HAR_HAS_CUDA
+    if constexpr (std::is_same_v<T, float>) {
+      if (input.device() == Device::CUDA && cuda_ops::active()) {
+        cuda_ops::conv2d_forward(
+            input.data(), weight_.data.data(),
+            use_bias_ ? bias_.data.data() : nullptr, this->output_.data(),
+            static_cast<int>(N), static_cast<int>(in_channels_),
+            static_cast<int>(H), static_cast<int>(W),
+            static_cast<int>(out_channels_), static_cast<int>(kernel_h_),
+            static_cast<int>(kernel_w_), static_cast<int>(stride_h_),
+            static_cast<int>(stride_w_), static_cast<int>(pad_h_),
+            static_cast<int>(pad_w_), static_cast<int>(H_out),
+            static_cast<int>(W_out), use_bias_ ? 1 : 0);
+        return this->output_;
+      }
+    }
+#endif
 
     for (size_t n = 0; n < N; ++n) {
       for (size_t oc = 0; oc < out_channels_; ++oc) {
@@ -89,7 +110,26 @@ public:
     const size_t H_out = grad_output.shape()[2];
     const size_t W_out = grad_output.shape()[3];
 
-    Tensor<T> grad_input(input.shape(), T{0});
+    Tensor<T> grad_input(input.shape(), T{0}, input.device());
+
+#ifdef HAR_HAS_CUDA
+    if constexpr (std::is_same_v<T, float>) {
+      if (input.device() == Device::CUDA && cuda_ops::active()) {
+        cuda_ops::conv2d_backward(
+            input.data(), weight_.data.data(), grad_output.data(),
+            grad_input.data(), weight_.grad.data(),
+            use_bias_ ? bias_.grad.data() : nullptr, static_cast<int>(N),
+            static_cast<int>(in_channels_), static_cast<int>(H),
+            static_cast<int>(W), static_cast<int>(out_channels_),
+            static_cast<int>(kernel_h_), static_cast<int>(kernel_w_),
+            static_cast<int>(stride_h_), static_cast<int>(stride_w_),
+            static_cast<int>(pad_h_), static_cast<int>(pad_w_),
+            static_cast<int>(H_out), static_cast<int>(W_out),
+            use_bias_ ? 1 : 0);
+        return grad_input;
+      }
+    }
+#endif
 
     for (size_t n = 0; n < N; ++n) {
       for (size_t oc = 0; oc < out_channels_; ++oc) {
@@ -148,15 +188,16 @@ private:
   void init_weights() {
     const T fan_in =
         static_cast<T>(in_channels_ * kernel_h_ * kernel_w_);
-    const T fan_out =
-        static_cast<T>(out_channels_ * kernel_h_ * kernel_w_);
-    const T limit = std::sqrt(T{6} / (fan_in + fan_out));
+    // Kaiming/He uniform for ReLU: U(-sqrt(6/fan_in), sqrt(6/fan_in))
+    const T limit = std::sqrt(T{6} / std::max(fan_in, T{1}));
     static thread_local std::mt19937 gen{std::random_device{}()};
     std::uniform_real_distribution<T> dist(-limit, limit);
 
+    weight_.data.sync();
     for (size_t i = 0; i < weight_.data.size(); ++i) {
       weight_.data[i] = dist(gen);
     }
+    weight_.data.sync();
     weight_.grad.zero();
     if (use_bias_) {
       bias_.data.zero();

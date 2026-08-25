@@ -14,12 +14,13 @@ public:
 
   void add(layers::LayerPtr<T> layer) { layers_.push_back(std::move(layer)); }
 
-  auto forward(const Tensor<T> &input) -> Tensor<T> {
-    Tensor<T> x = input;
+  auto forward(const Tensor<T> &input) -> const Tensor<T> & {
+    const Tensor<T> *cur = &input;
     for (auto &layer : layers_) {
-      x = layer->forward(x);
+      layer->forward(*cur);
+      cur = &layer->output();
     }
-    return x;
+    return *cur;
   }
 
   auto backward(const Tensor<T> &grad_output) -> Tensor<T> {
