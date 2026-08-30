@@ -40,19 +40,19 @@ Train options:
   --max-per-class N   Limit videos/class (0=all). Useful for dry runs
   --no-cache          Disable decoded-clip cache
   --seed N            Default: 42
-  --weights PATH      Save checkpoint. Default: models/<dataset>_videocnn.harw
+  --weights PATH      Save checkpoint. Default: Weights/<dataset>_videocnn.harw
   --resume PATH       Load checkpoint and continue training
   --target-acc FLOAT  Stop when test accuracy reaches this (0.95 or 95). Off by default
 
 Predict options:
   --dir PATH          Folder of videos to classify. Default: checkAcc
-  --weights PATH      Checkpoint to load. Default: models/ucf11_videocnn.harw
+  --weights PATH      Checkpoint to load. Default: Weights/ucf11_videocnn.harw
   --top K             Print top-K classes. Default: 3
 
 Eval options:
   --dataset NAME      ucf11 (default) or ucf101
   --data PATH         Video root. Default: data/UCF11_updated_mpg
-  --weights PATH      Checkpoint to load. Default: models/ucf11_videocnnBest.harw
+  --weights PATH      Checkpoint to load. Default: Weights/ucf11_videocnn.harw
   --split NAME        test (default), val, or train
   --batch N           Default: 16
   --seed N            UCF11 hold-out seed. Default: 42
@@ -205,8 +205,8 @@ auto run_train(int argc, char **argv) -> int {
   }
   if (!cli.weights_set) {
     cli.train.weights_path = (dataset == "ucf11")
-                                 ? "models/ucf11_videocnn.harw"
-                                 : "models/ucf101_videocnn.harw";
+                                 ? "Weights/ucf11_videocnn.harw"
+                                 : "Weights/ucf101_videocnn.harw";
   }
 
   if (dataset == "ucf11") {

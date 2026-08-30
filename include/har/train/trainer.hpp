@@ -39,7 +39,7 @@ struct TrainConfig {
   unsigned seed{42};
   bool verbose{true};
   float target_test_acc{0};
-  std::string weights_path{"models/ucf101_videocnn.harw"};
+  std::string weights_path{"Weights/ucf101_videocnn.harw"};
   std::string resume_path{};
 };
 

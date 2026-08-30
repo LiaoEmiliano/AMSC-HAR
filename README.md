@@ -60,9 +60,9 @@ You can use the compiled `har_cnn` executable to train, evaluate, or run predict
 ### 1. Predict / Inference
 To classify new videos, place `.mpg` or `.mp4` files into a directory (e.g., `eval_videos`) and run:
 ```bash
-./build/har_cnn predict --dir eval_videos --weights models/ucf11_videocnn.harw
+./build/har_cnn predict --dir eval_videos --weights Weights/ucf11_videocnn.harw
 ```
-*(By default, it uses the provided checkpoint in `models/ucf11_videocnn.harw` and prints the Top-3 predictions).*
+*(By default, it uses the provided checkpoint in `Weights/ucf11_videocnn.harw` and prints the Top-3 predictions).*
 
 ### 2. Training
 To train the VideoCNN on the UCF11 dataset:
@@ -74,7 +74,7 @@ Use `--help` to see all hyperparameters (learning rate, momentum, dropout, size,
 ### 3. Evaluation
 Evaluate a trained model checkpoint against a dataset split (e.g. testing set):
 ```bash
-./build/har_cnn eval --dataset ucf11 --data data/UCF11_updated_mpg --weights models/ucf11_videocnn.harw
+./build/har_cnn eval --dataset ucf11 --data data/UCF11_updated_mpg --weights Weights/ucf11_videocnn.harw
 ```
 
 ### 4. Extract Frames
@@ -88,6 +88,6 @@ Extract static frames from a video file manually using the backend decoder:
 - `include/har/` : Header-only C++23 library (Tensors, Layers, Optimizers, Network, Data).
 - `src/` : CUDA kernels and CPU source entry points.
 - `main.cpp` : The CLI application parsing arguments and routing commands.
-- `models/` : Checkpoint (`.harw`) files for pretrained models.
+- `Weights/` : Checkpoint (`.harw`) files for pretrained models.
 - `report/` : LaTeX source and PDF containing the mathematical modeling, architecture details, and experimental results.
 - `third_party/` : Vendored dependencies (stb_image, etc.).

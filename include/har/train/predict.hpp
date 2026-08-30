@@ -21,7 +21,7 @@ namespace har::train {
 
 struct PredictConfig {
   std::string dir{"checkAcc"};
-  std::string weights_path{"models/ucf11_videocnn.harw"};
+  std::string weights_path{"Weights/ucf11_videocnn.harw"};
   size_t top_k{3};
 };
 
