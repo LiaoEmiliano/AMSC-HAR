@@ -73,7 +73,7 @@ On the UCF11 (YouTube Action) dataset the default recipe uses $64\times 64$
 frames, $T=8$ uniformly sampled time steps, and about $5.9\times 10^5$
 trainable parameters.
 A held-out inference check with the released best checkpoint
-\texttt{ucf11\_videocnnBest.harw} classified $8/10$ randomly drawn clips
+\texttt{ucf11\_videocnn.harw} classified $8/10$ randomly drawn clips
 correctly (80\%), with several classes predicted at $>95\%$ confidence.
 The same codebase also targets UCF101 official splits.
 This document covers design goals, software architecture, the mathematical
@@ -149,9 +149,8 @@ UCF11 has no official train/test list, so the loader applies a
 class-stratified shuffle with default ratios
 $80\%$ train / $10\%$ val / $10\%$ test.
 
-\paragraph{UCF101} has 101 classes and three official
-recognition splits.
-This dataset is used to evaluate the performance of the VideoCNN model.
+\paragraph{Test datasets} To evaluate the performance of the VideoCNN model, we used the following datasets : UCF101, HMDB51 and Kinetics.
+
 
 Table~\ref{tab:ucf11} lists the UCF11 classes as stored in the best
 checkpoint (alphabetical folder names).
@@ -236,7 +235,7 @@ In training,
 and $(\mu,\sigma^2)$ are written into exponential moving averages
 (momentum $0.1$).
 Eval uses the running statistics stored in the checkpoint, which is
-essential for the 80\% folder test in Section~\ref{sec:exp}.
+essential for the held-out inference tests in Section~\ref{sec:exp}.
 
 \paragraph{Pooling and activations.}
 $2\times 2$ max-pool records argmax indices for the backward pass.
@@ -428,37 +427,6 @@ The first batch of an epoch prints mean and standard deviation of the
 stacked tensor; a near-zero warning catches a broken decoder.
 
 %----------------------------------------------------------------------
-\section{CUDA backend}
-\label{sec:cuda}
-
-When \texttt{HAR\_HAS\_CUDA} is defined and a device is present,
-\texttt{default\_device()} returns CUDA unless \texttt{HAR\_DEVICE=cpu}
-is set.
-\texttt{src/cuda\_ops.cu} provides:
-\begin{itemize}
-  \item elementwise add/sub/mul/div and scalar variants;
-  \item GEMM and transpose used by Linear;
-  \item Conv2D forward/backward, ReLU, Dropout, max-pool, GAP;
-  \item BatchNorm2D with a small device scratch buffer;
-  \item TemporalConv1D forward/backward.
-\end{itemize}
-Kernels use a 1-D grid with 256 threads.
-Attention pooling currently stays on the host (it is $O(NTC)$ with
-$C=256$, $T=8$, and is not the bottleneck compared with the last
-$3\times 3$ convolution).
-
-Unified Memory simplifies the C++ API---the same \texttt{data()} pointer
-is valid on both sides---but it requires the activation cap of
-the build instructions and a matching driver/toolkit pair.
-The CMake comment documents a real failure mode: PTX produced by CUDA
-13.3 cannot JIT on a 13.2 driver, which is why the project ships
-\texttt{86-real} cubin only.
-
-The inference experiment in Section~\ref{sec:exp} ran on the CPU path
-(OpenCV decoder, no \texttt{nvcc} in the MSYS2 build).
-Numerical results therefore do not depend on GPU reductions.
-
-%----------------------------------------------------------------------
 \section{Experiments}
 \label{sec:exp}
 
@@ -494,7 +462,7 @@ These logs confirm that while the from-scratch C++ Soft Computing model effectiv
 \label{sec:conc}
 
 This work presents a complete, from-scratch C++23 implementation of the VideoCNN architecture for human action recognition. While empirical evaluations demonstrate strong predictive capabilities on the UCF11 dataset, the model exhibits misclassifications in more challenging scenarios. These limitations primarily stem from the constrained model capacity, the inherent complexity of the actions, and the specific characteristics of the training data. Restricting the network width to 256 channels hinders its ability to extract highly intricate spatial features. Furthermore, the fixed temporal receptive field ($T=8$ frames), processed via a simple 1D temporal convolution, proves insufficient to fully capture prolonged dynamic movements such as walking or biking. Consequently, the model struggles with cross-dataset generalisation; having been trained exclusively on the relatively static camera angles and controlled movements of UCF11, it lacks the robust feature representations required to adapt to the broader visual variability found in external datasets.
-%----------------------------------------------------------------------
+
 \begin{thebibliography}{9}
 
 \bibitem{houssein2025integrating}
