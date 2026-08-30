@@ -14,32 +14,110 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-add_compile_options(
-    -Wall
-    -Wextra
-    -Wpedantic
-    -Werror=return-type
-)
+if(MSVC)
+    add_compile_options(
+        "$<$<COMPILE_LANGUAGE:CXX>:/W4>"
+        "$<$<COMPILE_LANGUAGE:CXX>:/permissive->"
+    )
+else()
+    add_compile_options(
+        $<$<COMPILE_LANGUAGE:CXX>:-Wall>
+        $<$<COMPILE_LANGUAGE:CXX>:-Wextra>
+        $<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>
+        $<$<COMPILE_LANGUAGE:CXX>:-Werror=return-type>
+    )
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+option(HAR_WITH_OPENCV "Enable OpenCV video frame extraction" ON)
+option(HAR_WITH_CUDA "Enable CUDA tensor storage and training kernels" ON)
 
-# Include directories
-include_directories(
+set(HAR_CUDA_ENABLED OFF)
+if(HAR_WITH_CUDA)
+    if(NOT CMAKE_CUDA_COMPILER)
+        if(DEFINED ENV{CUDA_PATH} AND EXISTS "$ENV{CUDA_PATH}/bin/nvcc.exe")
+            set(CMAKE_CUDA_COMPILER "$ENV{CUDA_PATH}/bin/nvcc.exe")
+        elseif(EXISTS "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3/bin/nvcc.exe")
+            set(CMAKE_CUDA_COMPILER "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3/bin/nvcc.exe")
+        endif()
+    endif()
+    include(CheckLanguage)
+    check_language(CUDA)
+    if(CMAKE_CUDA_COMPILER)
+        enable_language(CUDA)
+        set(CMAKE_CUDA_STANDARD 17)
+        set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+            # 86-real = cubin only. PTX from CUDA 13.3 cannot JIT on a 13.2 driver.
+            set(CMAKE_CUDA_ARCHITECTURES 86-real)
+        endif()
+        set(HAR_CUDA_ENABLED ON)
+    else()
+        message(WARNING "CUDA compiler not found; training will use CPU. Install the CUDA Toolkit (nvcc) or set HAR_WITH_CUDA=OFF.")
+    endif()
+endif()
+
+add_executable(har_cnn main.cpp)
+target_include_directories(har_cnn PRIVATE
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/third_party
 )
 
-# Main executable (header-only library, just build main)
-add_executable(har_cnn main.cpp)
+if(HAR_CUDA_ENABLED)
+    find_package(CUDAToolkit REQUIRED)
+    target_sources(har_cnn PRIVATE src/cuda_ops.cu)
+    target_compile_definitions(har_cnn PRIVATE HAR_HAS_CUDA=1)
+    target_link_libraries(har_cnn PRIVATE CUDA::cudart)
+    set_target_properties(har_cnn PROPERTIES CUDA_SEPARABLE_COMPILATION OFF)
+    message(STATUS "CUDA enabled: ${CMAKE_CUDA_COMPILER} (${CUDAToolkit_VERSION})")
+endif()
 
-# Tests 
+if(HAR_WITH_OPENCV)
+    if(NOT OpenCV_DIR AND EXISTS "${PROJECT_SOURCE_DIR}/third_party/opencv/build/OpenCVConfig.cmake")
+        set(OpenCV_DIR "${PROJECT_SOURCE_DIR}/third_party/opencv/build")
+    endif()
+    find_package(OpenCV QUIET COMPONENTS core imgproc imgcodecs videoio
+        PATHS
+            "${PROJECT_SOURCE_DIR}/third_party/opencv/build"
+            "$ENV{OpenCV_DIR}"
+            "C:/opencv/build"
+    )
+    if(OpenCV_FOUND)
+        target_compile_definitions(har_cnn PRIVATE HAR_HAS_OPENCV=1)
+        target_include_directories(har_cnn PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries(har_cnn PRIVATE ${OpenCV_LIBS})
+        message(STATUS "OpenCV found: ${OpenCV_VERSION} (${OpenCV_DIR})")
+        if(WIN32)
+            set(_har_opencv_bin_dirs
+                "${OpenCV_DIR}/x64/vc17/bin"
+                "${OpenCV_DIR}/x64/vc16/bin"
+                "${OpenCV_DIR}/bin"
+            )
+            foreach(_bin_dir IN LISTS _har_opencv_bin_dirs)
+                if(EXISTS "${_bin_dir}")
+                    file(GLOB _har_opencv_dlls "${_bin_dir}/*.dll")
+                    if(_har_opencv_dlls)
+                        add_custom_command(TARGET har_cnn POST_BUILD
+                            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                                ${_har_opencv_dlls}
+                                $<TARGET_FILE_DIR:har_cnn>
+                            COMMENT "Copy OpenCV runtime DLLs")
+                        break()
+                    endif()
+                endif()
+            endforeach()
+        endif()
+    else()
+        message(WARNING "OpenCV not found; video extraction will use FFmpeg. Place the official Windows build in third_party/opencv or set OpenCV_DIR.")
+    endif()
+endif()
+
 option(BUILD_TESTS "Build tests" OFF)
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
 
-# Installation
 install(TARGETS har_cnn DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include)

@@ -30,6 +30,30 @@ Makefile
 *.bin
 *.weights
 *.model
+*.mpg
+*.mp4
+*.avi
 data/
 
 .cache
+
+# LaTeX generated files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.dvi
+*.bcf
+*.run.xml
+
+# Python scripts used for report manipulation
+*.py
+
+.DS_Store

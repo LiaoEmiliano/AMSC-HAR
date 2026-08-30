@@ -1,0 +1,93 @@
+Human Action Recognition predict log
+dataset: UCF101
+dir: checkAcc\UCF101
+weights: models/ucf11_videocnnBest.harw
+time: 2026-08-30 16:10:39
+Human Action Recognition using CNN
+Compute device: CPU
+Video decoder: OpenCV
+Predict: dir=checkAcc\UCF101  weights=models/ucf11_videocnnBest.harw  size=64x64  frames=8  classes=11
+  basketball\v_Basketball_g06_c01.avi
+     1. basketball               78.3%  ok
+     2. walking                  14.5%
+     3. biking                    2.4%
+  basketball\v_Basketball_g11_c04.avi
+     1. basketball               85.7%  ok
+     2. golf_swing                7.9%
+     3. volleyball_spiking        4.2%
+  biking\v_Biking_g04_c05.avi
+     1. swing                    53.6%  miss
+     2. biking                   22.0%
+     3. soccer_juggling          15.1%
+       label: biking
+  diving\v_Diving_g17_c04.avi
+     1. diving                   97.7%  ok
+     2. soccer_juggling           1.6%
+     3. basketball                0.5%
+  golf_swing\v_GolfSwing_g23_c04.avi
+     1. golf_swing               79.3%  ok
+     2. swing                     8.8%
+     3. soccer_juggling           8.1%
+  horse_riding\v_HorseRiding_g10_c02.avi
+     1. horse_riding             99.4%  ok
+     2. walking                   0.3%
+     3. golf_swing                0.2%
+  horse_riding\v_HorseRiding_g22_c01.avi
+     1. horse_riding             99.1%  ok
+     2. basketball                0.4%
+     3. walking                   0.2%
+  horse_riding\v_HorseRiding_g25_c07.avi
+     1. horse_riding            100.0%  ok
+     2. walking                   0.0%
+     3. biking                    0.0%
+  soccer_juggling\v_SoccerJuggling_g13_c02.avi
+     1. soccer_juggling          84.6%  ok
+     2. horse_riding              7.6%
+     3. basketball                2.8%
+  soccer_juggling\v_SoccerJuggling_g22_c03.avi
+     1. soccer_juggling          79.0%  ok
+     2. swing                    15.2%
+     3. volleyball_spiking        2.5%
+  swing\v_Swing_g15_c02.avi
+     1. swing                    95.5%  ok
+     2. trampoline_jumping        4.2%
+     3. horse_riding              0.1%
+  swing\v_Swing_g22_c02.avi
+     1. swing                    86.0%  ok
+     2. trampoline_jumping        8.2%
+     3. walking                   3.6%
+  swing\v_Swing_g24_c04.avi
+     1. swing                    96.0%  ok
+     2. soccer_juggling           3.4%
+     3. biking                    0.5%
+  tennis_swing\v_TennisSwing_g13_c02.avi
+     1. tennis_swing             99.5%  ok
+     2. basketball                0.2%
+     3. soccer_juggling           0.1%
+  tennis_swing\v_TennisSwing_g13_c07.avi
+     1. tennis_swing             99.3%  ok
+     2. basketball                0.3%
+     3. golf_swing                0.2%
+  trampoline_jumping\v_TrampolineJumping_g09_c05.avi
+     1. trampoline_jumping       98.7%  ok
+     2. diving                    0.6%
+     3. swing                     0.4%
+  volleyball_spiking\v_VolleyballSpiking_g21_c01.avi
+     1. volleyball_spiking       99.6%  ok
+     2. soccer_juggling           0.1%
+     3. basketball                0.1%
+  walking\v_WalkingWithDog_g04_c03.avi
+     1. swing                    58.8%  miss
+     2. walking                  30.6%
+     3. biking                    5.5%
+       label: walking
+  walking\v_WalkingWithDog_g22_c03.avi
+     1. walking                  91.5%  ok
+     2. biking                    6.8%
+     3. horse_riding              1.4%
+  walking\v_WalkingWithDog_g23_c03.avi
+     1. walking                  94.7%  ok
+     2. biking                    4.4%
+     3. trampoline_jumping        0.3%
+done: 20 video(s), labeled 18/20 (90.0%)
+

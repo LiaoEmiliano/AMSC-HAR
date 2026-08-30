@@ -1,0 +1,512 @@
+% A LaTeX template for EXECUTIVE SUMMARY of the MSc Thesis submissions to 
+% Politecnico di Milano (PoliMi) - School of Industrial and Information Engineering
+%
+% S. Bonetti, A. Gruttadauria, G. Mescolini, A. Zingaro
+% e-mail: template-tesi-ingind@polimi.it
+%
+% Last Revision: October 2021
+%
+% Copyright 2021 Politecnico di Milano, Italy. NC-BY
+
+\documentclass[11pt,a4paper,twocolumn]{article}
+
+%------------------------------------------------------------------------------
+%	REQUIRED PACKAGES AND  CONFIGURATIONS
+%------------------------------------------------------------------------------
+% PACKAGES FOR TITLES
+\usepackage{titlesec}
+\usepackage{color}
+
+% PACKAGES FOR LANGUAGE AND FONT
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc} % Font encoding
+
+% PACKAGES FOR IMAGES
+\usepackage{graphicx}
+\graphicspath{{Images/}} % Path for images' folder
+\usepackage{eso-pic} % For the background picture on the title page
+\usepackage{subfig} % Numbered and caption subfigures using \subfloat
+\usepackage{caption} % Coloured captions
+\usepackage{transparent}
+
+% STANDARD MATH PACKAGES
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage[overload]{empheq}  % For braced-style systems of equations
+
+% PACKAGES FOR TABLES
+\usepackage{tabularx}
+\usepackage{longtable} % tables that can span several pages
+\usepackage{colortbl}
+\usepackage{booktabs} % For professional looking tables
+
+% PACKAGES FOR ALGORITHMS (PSEUDO-CODE)
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% PACKAGES FOR REFERENCES & BIBLIOGRAPHY
+\usepackage[colorlinks=true,linkcolor=black,anchorcolor=black,citecolor=black,filecolor=black,menucolor=black,runcolor=black,urlcolor=black]{hyperref} % Adds clickable links at references
+\usepackage{cleveref}
+\usepackage[square, numbers, sort&compress]{natbib} % Square brackets, citing references with numbers, citations sorted by appearance in the text and compressed
+\bibliographystyle{plain} % You may use a different style adapted to your field
+
+% PACKAGES FOR THE APPENDIX
+\usepackage{appendix}
+
+% PACKAGES FOR ITEMIZE & ENUMERATES 
+\usepackage{enumitem}
+
+% OTHER PACKAGES
+\usepackage{amsthm,thmtools,xcolor} % Coloured "Theorem"
+\usepackage{comment} % Comment part of code
+\usepackage{fancyhdr} % Fancy headers and footers
+\usepackage{lipsum} % Insert dummy text
+\usepackage{tcolorbox} % Create coloured boxes (e.g. the one for the key-words)
+\usepackage{stfloats} % Correct position of the tables
+\usepackage{amssymb} % for the \mathbbm command
+
+%-------------------------------------------------------------------------
+%	NEW COMMANDS DEFINED
+%-------------------------------------------------------------------------
+% EXAMPLES OF NEW COMMANDS -> here you see how to define new commands
+\newcommand{\bea}{\begin{eqnarray}} % Shortcut for equation arrays
+\newcommand{\eea}{\end{eqnarray}}
+\newcommand{\e}[1]{\times 10^{#1}}  % Powers of 10 notation
+\newcommand{\mathbbm}[1]{\text{\usefont{U}{bbm}{m}{n}#1}} % From mathbbm.sty
+\newcommand{\pdev}[2]{\frac{\partial#1}{\partial#2}}
+% NB: you can also override some existing commands with the keyword \renewcommand
+
+%----------------------------------------------------------------------------
+%	ADD YOUR PACKAGES (be careful of package interaction)
+%----------------------------------------------------------------------------
+
+
+%----------------------------------------------------------------------------
+%	ADD YOUR DEFINITIONS AND COMMANDS (be careful of existing commands)
+%----------------------------------------------------------------------------
+
+
+% Do not change Configuration_files/config.tex file unless you really know what you are doing. 
+% This file ends the configuration procedures (e.g. customizing commands, definition of new commands)
+\input{Configuration_files/config}
+
+% Insert here the info that will be displayed into your Title page 
+% -> title of your work
+\renewcommand{\title}{Running a Kolmogorov Arnold Network (KAN) on RISC-V based core using GEM5}
+\renewcommand{\author}{Daniela Hu, Emiliano Liao}
+% -> MSc course
+\newcommand{\course}{High Performance Computing Engineering}
+% -> advisor name and surname
+\newcommand{\advisor}{Prof. Cristina Silvano}
+% IF AND ONLY IF you need to modify the co-supervisors you also have to modify the file Configuration_files/title_page.tex (ONLY where it is marked)
+\newcommand{\firstcoadvisor}{Mattia Balla} % insert if any otherwise comment 
+%\newcommand{\secondcoadvisor}{Name Surname} % insert if any otherwise comment
+% -> academic year
+\newcommand{\YEAR}{2025-2026}
+
+%-------------------------------------------------------------------------
+%	BEGIN OF YOUR DOCUMENT
+%-------------------------------------------------------------------------
+\begin{document}
+
+%-----------------------------------------------------------------------------
+% TITLE PAGE
+%-----------------------------------------------------------------------------
+% Do not change Configuration_files/TitlePage.tex (Modify it IF AND ONLY IF you need to add or delete the Co-advisors)
+% This file creates the Title Page of the document
+\input{Configuration_files/title_page}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%     THESIS MAIN TEXT     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%-----------------------------------------------------------------------------
+% INTRODUCTION
+%-----------------------------------------------------------------------------
+\section{Introduction}
+\label{sec:introduction}
+
+Machine learning is nowadays massively used in many fields, such as computer vision, natural language processing, and speech recognition. 
+\\
+However, the training of neural networks according to Multi-Layer Perceptrons (MLPs) model is computationally intensive and requires significant resources. 
+To address this challenge, researchers have explored various techniques to optimize DNN training in terms of speed, memory usage, and energy efficiency.
+\\
+In this thesis, we will focus on the optimization of training methods through the use of Kolmogorov-Arnold representation and the implementation of it on a RISC-V based core using Gem5.
+To be more precise, we evaluate the performance of the Wavelet Kolmogorov-Arnold Networks (Wavelet KANs) in image recognition tasks through the use of the MNIST and CIFAR-10 datasets.
+Here we present the theoretical concepts on which our work is based in the \textit{Section~\ref{sec:WaveKAN}} about \textit{\sc{Wavelet Kolmogorov-Arnold Network}}. While in the \textit{Section~\ref{sec:python}}, the results from the \textit{\sc{Implementation in Python}}. 
+The part of the \textit{\sc{Simulations on RISC-V} core} is explained in \textit{Section~\ref{sec:simulations}} with a particular attention to the condition under which this work is done.
+Finally, the final  \textit{\sc{Conclusions}} obtained from this whole process are stated in the \textit{Section~\ref{sec:conclusions}}.
+%-----------------------------------------------------------------------------
+% KAN
+%-----------------------------------------------------------------------------
+
+\section{Wavelet Kolmogorov-Arnold Network}
+\label{sec:WaveKAN}
+The main purpose of this work is to contribute the research of an alternative to MLPs. These last, despite their widespread use in deep learning, introduce some limitations in terms of nearly total consumption of non-embedded parameters in transformers 
+and relatively low interpretability with respect to the attention layers \cite{vaswani2023attentionneed,liu2025kankolmogorovarnoldnetworks,cunningham2023sparseautoencodershighlyinterpretable}.
+\\
+The fundamental theorem of the KANs is explained in the \textit{Section~\ref{sec:KA_theorem}} about \textit{\sc{Kolmogorov-Arnold representation theorem}}. 
+While the \textit{Section~\ref{subsec:KA_architecture}} about \textit{\sc{Kolmogorov-Arnold Network architecture}} describes the architecture of the KANs.
+A theorical comparison between two different types of KANs is also provided in the \textit{Section~\ref{subsec:typeComparison}} about \textit{\sc{Comparison between B-spline KAN and Wavelet KAN}}.
+
+    \subsection{Kolmogorov-Arnold representation theorem}
+    \label{sec:KA_theorem}
+    \begin{theorem}[Kolmogorov-Arnold representation theorem]
+    The Kolmogorov-Arnold representation theorem, or also superposition theorem, states that for a multivariate continuous function $f:[0,1]^n \to \mathbb{R}$, there exist univariate continuous functions $\phi_i$ and $\psi_{ij}$ such that:
+    \begin{equation}
+        f(x_1, \ldots, x_n) = \sum_{i=1}^{2n+1} \phi_i \left( \sum_{j=1}^{n} \psi_{ij}(x_j) \right)
+    \end{equation}
+    \end{theorem}
+    Through this decomposition, $f$ shows a similar structure to a neural network with two hidden layers, considering the inner functions $\psi_{ij}$ and the outer functions $\phi_i$ \cite{schmidthieber2021kolmogorovarnoldrepresentationtheoremrevisited}.
+    \\
+    Another crutial aspect is centered on the fact that learning a high-dimentional function is equivalent to learning a set of 1-dimensional functions \cite{liu2025kankolmogorovarnoldnetworks}.
+    However, this apparent advantage is counterbalanced by the fact that not all the 1D actually are learnable \cite{TomasoPoggio2020TheoreticalIssuesInDeepNetworks,6796867}.
+    For the stated reason, the phylosophy of the study is oriented to the typical cases rather than the worst cases as usually followed by the physicists \cite{Lin_2017}.
+    
+    
+    \subsection{Kolmogorov-Arnold Network architecture}
+    \label{subsec:KA_architecture}
+    To understand the translation of the Kolmogorov-Arnold representation theorem into a neural network architecture, it is essential to consider the different role the weights play in KAN. 
+    KANs do not have linear weights, but rather they have univariate functions parametrized as the function that we meant to use.
+    In contrast to MLPs, which have fixed activation functions on nodes, KANs' activation functions are learnable on edges \cite{liu2025kankolmogorovarnoldnetworks}.
+    These functions can be represented by B-splines or wavelets, which are the two types of KANs that we will compare in the next section.
+    For now we only need to know the structure of the KANs and we will start from the definition of the layers.
+    \\
+    A KAN layer with $n$ inputs and $m$ outputs can be defined as a matrix of univariate functions $\phi$ with trainable parameters of size $m \times n$:
+    \begin{equation}
+    \label{eq:KAN_layer}
+        \Phi =\{\phi_{q,p}\}, \quad q=1,\ldots,m, \quad p=1,\ldots,n
+    \end{equation}
+    Further more, we can represent the KANs' shape through an integer array $[n_1, n_2, \ldots, n_L]$ where $L$ is the number of layers and $n_l$ is the number of nodes in layer $l$.
+    Between the $l$-th and $(l+1)$-th layer there are $n_l \cdot n_{l+1}$ univariate functions $\phi_{l,j,i}$ that connect the $i$-th neuron in the $l$-th layer to the $j$-th neuron in the $(l+1)$-th layer.
+    The pre-activation of $\phi_{l,j,i}$ is given by the activation value $x_{l,i}$, while the post-activation is given by $\tilde{x}_{l,j,i}=\phi_{l,j,i}(x_{l,i})$. 
+    The activation value of the $j$-th neuron in the $(l+1)$-th layer is then given by the sum of all post-activations from the previous layer:
+    \begin{equation}
+        \label{eq:KAN_output}
+        x_{l+1,j} = \sum_{i=1}^{n_l} \tilde{x}_{l,j,i} = \sum_{i=1}^{n_l} \phi_{l,j,i}(x_{l,i})
+    \end{equation}
+    So the output of the KAN layer can be expressed as:
+    \begin{equation}
+        \label{eq:KAN_output_matrix}
+        \bm{x}_{l+1} = \Phi_l(\bm{x}_l)
+    \end{equation}
+    A general KAN with $L$ layers can be expressed as a composition of $L$ KAN layers and given an input $\bm{x}\in \mathbb{R}^{n_0}$, the output of the KAN is:
+    \begin{equation}
+        \label{eq:KAN_composition}
+        KAN(\bm{x}) = \Phi_{L-1}(\Phi_{L-2}(\ldots \Phi_1(\Phi_0(\bm{x}))\ldots))
+    \end{equation}
+    While a MLP with $L$ layers can be expressed as a composition of $L$ linear transformations and given an input $\bm{x}\in \mathbb{R}^{n_0}$, the output of the MLP is:
+    \begin{equation}
+        \label{eq:MLP_composition}
+        MLP(\bm{x}) = W_{L-1}(\sigma(\ldots W_1(\sigma(W_0(\bm{x})))\ldots))
+    \end{equation}
+    From their respective definitions, it is clear that KANs and MLPs have different structures and properties.
+    \\
+    In particular, MLPs treat linear and non-linear transformations separately($W$ and $\sigma$), while KANs treat them together \cite{liu2025kankolmogorovarnoldnetworks}.
+    
+    
+    \subsection{Comparison between B-spline KAN and Wavelet KAN}
+    \label{subsec:typeComparison}
+    In this subsection we will compare the two types of KANs, B-spline KAN and Wavelet KAN, in terms of their \textit{\sc{Theorical definition of the two univariate representations}} in \textit{Section~\ref{subsubsec:theorical_def_types}}.
+    The \textit{\sc{Details of the comparison}} will be privided in the \textit{\ref{subsubsec:actual_comparison}} section.
+    The chapter concludes in \textit{Section~\ref{subsubsec:applications}} with a summary of the main \textit{\sc{Applications of the two types of KANs}}.
+    \subsubsection{Theorical definition of the two univariate representations}
+    \label{subsubsec:theorical_def_types}
+    \paragraph{B-Spline KAN:} 
+        the univariate functions in this case is represented by B-splines, which are defined as follows:
+        \begin{theorem}[Definition of B-spline\cite{weisstein_bspline}]
+            \label{def:B-spline}
+            A B-spline is a generalization of Bézier curves. Let a knot vector 
+            \begin{equation}
+                \label{eq:knot_vector}
+                t = (t_0, \dots, t_m), \quad t_i \in [0,1]
+            \end{equation}
+            be a non-decreasing sequence of real numbers, where $m$ is the number of knots, and define control points $P_0, \dots, P_n$.
+            The degree $p$ is defined as $p = m - n - 1$ and let's define the B-spline basis functions $N_{i,j}(t)$ as follows:
+            \begin{equation}
+                \label{eq:B-spline_basis_0}
+                N_{i,0}(t) = \begin{cases}
+                1, & \text{if } t_i \leq t < t_{i+1} \text{and } t_i<t_{i+1}  \\
+                0, & \text{otherwise}, 
+                \end{cases}
+            \end{equation}
+            \begin{equation}
+                \label{eq:B-spline_basis_ij}
+                \begin{split}
+                N_{i,j}(t) &= \frac{t - t_i}{t_{i+j} - t_i} N_{i,j-1}(t) + \\
+                            &+ \frac{t_{i+j+1} - t}{t_{i+j+1} - t_{i+1}} N_{i+1,j-1}(t) \\
+                \end{split}
+            \end{equation}
+            where $j = 1,2, \dots, p$ and the curve is defined as:
+            \begin{equation}
+                \label{eq:B-spline_curve}
+                C(t) = \sum_{i=0}^{n} P_i N_{i,p}(t)
+            \end{equation}
+        \end{theorem}
+    \paragraph{Wavelet KAN:} as for the B-spline KAN, the univariate functions in this case is represented by wavelets, which are defined as follows:
+    \begin{theorem}[Definition of Wavelet\cite{weisstein_wavelet,matlab_wavelet_help}]
+        A wavelet is a finite-duration waveform with a non-zero norm and an average value of zero and a family of wavelets is generated from a mother wavelet $\psi(t)$ through contraction($a$) and translation($b$).
+        Here follows an example of individual wavelet:
+        \begin{equation}
+            \label{eq:individual_wavelet}
+            \psi^{a,b}(t) = \frac{1}{\sqrt{a}} \psi\left(\frac{t-b}{a}\right)
+        \end{equation}
+        \end{theorem}
+        The types of wavelets are many, but for the purpose of this work we will focus on the Mexican Hat wavelet, which is defined as follows:
+        \begin{equation}
+        \label{eq:MessicanHat}
+        \psi(t)=\frac{2}{\sqrt{3\sigma}\pi^{\frac{1}{4}}}\left(1-\left(\frac{t}{\sigma}^2\right)\right)e^{-\frac{t^2}{2\sigma^2}}
+        \end{equation}
+        In fact the Mexican Hat( or also Ricker wavelet) is also the negative normalized second derivative of a Gaussian function. 
+        This means it is mathematically optimized to find sudden changes in pixel intensity (edges)\cite{10.1098/rspb.1980.0020}.
+
+
+    \subsubsection{Details of the comparison\cite{bozorgasl2024wavkanwaveletkolmogorovarnoldnetworks}}
+    \label{subsubsec:actual_comparison}
+    The both types are well-known for function approximation with their own advantages and limitations. 
+    \paragraph{B-Spline KAN:}The local control implies also a better support in terms of precise function tuning.
+                            As withdraw consequetially of this high accuracy, is the significant increase of computational complexity
+                            when managing higher dimensions. Another impact of the knot is related to their
+                            placement, which can affect the overall shape and accuracy of the approximation.
+                            Furthermore, B-splines is affected by the overfitting problem, since they capture well the changes
+                            in data.
+    \paragraph{Wavelet KAN:}The wavelet recognizes the local and global features avoiding the overfitting to the noise.
+                            This inherent ability derives from the decomposition of the data into different frequency component,
+                            which allows the isolation and retention of the useful pattern while discarding irrelevant noise.
+                            As consequence of it, the wavelet offers a robust and reliable representation of target data.
+                            An additional point to consider is the sparse representations, which leads to more efficient neural network architectures and faster training times.
+                            It is essential to remember that the choice of the wavelet funtion can significantly impact the performance.
+
+    \subsubsection{Applications of the two types of KANs}
+    \label{subsubsec:applications}
+    \paragraph{B-Spline KAN:} The local adaptability and the smoothness given by the control points make the B-splines an excellet reference to 
+    treat problems involving continuous and refined approximations, commonly encountered in CAD and computer graphics.
+    \paragraph{Wavelet KAN:} The high capability of Wavelets in multi-resolution analysis allows different levels of detail to be represented simutaneosly
+    supprts feature extraction in neural networks, both are possible also thanks to the representation with frequencies. Also management of 
+    non-stationary signals and localized features are Wavelet's strength, so consequentially image recognition and signal classification
+    are tasks suitable for its application.
+
+
+%-----------------------------------------------------------------------------
+% Python implementation
+%-----------------------------------------------------------------------------
+\section{Implementation in Python}
+\label{sec:python}
+In this section we present the first implementation with Python to test the perfomance of the B-spline KAN and 
+Wavelet KAN in image recognition tasks.
+A detailed description of our \textit{\sc{Set up}} will be provided in \textit{Section \ref{subsec:Python_set_up}}.
+The \textit{\sc{Results}} are shown in \textit{Section \ref{subsec:Python_results}}. 
+\subsection{Set up}
+\label{subsec:Python_set_up}
+%TODO
+The KANs implemented in this work are all convolutional and, in case of application in Python, the speriments are done through 
+nets of two layer and four layer. The sets on which we have trained and tested are CIFAR10 and MNIST.
+To guarantee a fair comparison between the two types of KANs, we have tried to implement them with a number of parameters as similar as possible.
+The details of the implementation are provided in the following table.
+
+\begin{table}[htbp]
+\centering
+\caption{Number of trainable parameters for each KAN model on its corresponding test set.}
+\label{tab:model_parameters}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lllr@{}}
+\toprule
+\textbf{Dataset} & \textbf{Layers} & \textbf{Model} & \textbf{Parameters} \\
+\midrule
+MNIST & 2 & Conv.\ B-Spline KAN & 45\,648 \\
+MNIST & 2 & Conv.\ Wavelet KAN & 48\,608 \\
+\addlinespace
+MNIST & 4 & Conv.\ B-Spline KAN & 3\,510\,240 \\
+MNIST & 4 & Conv.\ Wavelet KAN & 3\,546\,736 \\
+\addlinespace
+CIFAR-10 & 2 & Conv.\ B-Spline KAN & 48\,240 \\
+CIFAR-10 & 2 & Conv.\ Wavelet KAN & 51\,488 \\
+\addlinespace
+CIFAR-10 & 4 & Conv.\ B-Spline KAN & 3\,515\,424 \\
+CIFAR-10 & 4 & Conv.\ Wavelet KAN & 3\,552\,208 \\
+\bottomrule
+\end{tabular}%
+}
+\vspace{0.5em}
+\footnotesize
+All models use a hidden size of 64 (linear models), $grid\_size=5$, $spline\_order=3$ (B-Spline KAN), and $num\_wavelets=8$ (Wavelet KAN).
+\end{table}
+
+The models were trained for 30 epochs with a batch size of 100.
+
+\subsection{Results}
+\label{subsec:Python_results}
+\paragraph{MNIST with 2-layer:} 
+The type of KANs involved in this phase are convolutional wavelet KAN, convolutional b-spline KAN.
+We made comparison between their loss and accuracy: both models achive a accuracy around 87\% after 30 epochs.
+However, the Wavelet KAN is faster in terms of training time. To confirm this, we have set up a test with a target accuracy of 80\% 
+and we have compared the training time and the number of epochs required to achieve it.
+The results shows that the Wavelet KAN has a speedup of 2x compared to the B-spline KAN,
+but requires more epochs to achieve the target accuracy.
+\paragraph{MNIST with 4-layer:}
+By adding more layers, both models achieve a accuracy over 95\% in few training epochs.
+Also in this case, the Wavelet KAN is faster in terms of training time with the same speed up as the 2-layer case.
+\paragraph{CIFAR-10 with 2-layer:}
+In this case, two layers aren not enough to achieve a good performance, the accuracy is around 50\% after 30 epochs for
+both models. Wavelet KAN is still faster in terms of training time. We have set up a test as the MNIST case,  with a target accuracy of 50\%,
+and we have compared the training time and the number of epochs required to achieve it.
+The results shows that the Wavelet KAN has a speedup of 2x compared to the B-spline KAN,
+and in this case, requires also less epochs.
+\paragraph{CIFAR-10 with 4-layer:} 
+By adding more layers, after 30 epochs, the wavelet KAN achieves a accuracy of 75\% while the b-spline KAN achieves a accuracy
+similar to the 2-layer case. 
+
+
+
+%-----------------------------------------------------------------------------
+% Gem5 implementation
+%-----------------------------------------------------------------------------
+\section{Simulations on RISC-V core}
+\label{sec:simulations}
+For this phase, an important tool is Gem5. Our main purpose in using it 
+is to simulate the hypothetical behavior of the code RISC-V of a Wavelet 
+KAN in C language file. From this moment, we are not more considering the B-spline 
+KANs or 4-layer Networks. The focus is on the evaluation of 2-layer Wavlet performance on RISC-V core. 
+An additional decision is to use only MNIST set for the simulations, because the CIFAR-10
+requires much more resources.
+\\
+A complete description of the \textit{\sc{Set up}} is in \textit{Sectioin\ref{subsec:Gem5_set_up}}, 
+while the \textit{\sc{Results}} and related observations are displayed in \textit{Section \ref{subsec:Gem5_results}}.
+\subsection{Set up}
+\label{subsec:Gem5_set_up}
+\subsubsection{Initial settings}
+\paragraph{Gem5 settings}
+All simulations were executed with gem5~v23.0.0.1 in syscall emulation (SE) mode,
+the details are provided in Table~\ref{tab:gem5_config}.
+
+\begin{table}[htbp]
+\centering
+\caption{gem5 simulation configuration used for performance analysis.}
+\label{tab:gem5_config}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Simulation mode & Syscall emulation (\texttt{se.py}) \\
+ISA / ABI & RISC-V RV64GC / \texttt{lp64d} \\
+CPU model & \texttt{DerivO3CPU} (out-of-order, scalar) \\
+Threads & 1 \\
+Fetch / decode / rename / issue / commit width & 8 \\
+ROB entries & 192 \\
+Instruction queue entries & 64 \\
+Load / store queue entries & 32 / 32 \\
+Physical int.\ / FP registers & 256 / 256 \\
+Branch predictor & \texttt{TournamentBP} (BTB: 4096, RAS: 16) \\
+\midrule
+Cache line size & 64~B \\
+L1 I-cache & 32~KB, 2-way, 2-cycle latency \\
+L1 D-cache & 64~KB, 2-way, 2-cycle latency \\
+L2 cache & 2~MB, 8-way, 20-cycle latency, mostly inclusive \\
+Memory mode & Timing (\texttt{MemCtrl} + default DRAM) \\
+System memory & 512~MB \\
+\midrule
+Compiler & \texttt{riscv64-unknown-elf-gcc -O3 -static} \\
+No-unroll baseline & additional \texttt{-fno-unroll-loops -fno-unroll-all-loops} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\paragraph{2-layer Wavelet KAN settings}
+The simulated network is a 2-layer convolutional Wavelet KAN for MNIST classification, has the following structure: input $1\times28\times28$, two \texttt{WavKANConv2d} layers ($1\!\rightarrow\!16\!\rightarrow\!32$ channels, kernel $3$, stride $2$, padding $1$), global average pooling, and a \texttt{WavKANLinear} classifier ($32\!\rightarrow\!10$).
+Each layer uses 8 Mexican-hat wavelets.
+Inference weights are loaded from the trained PyTorch checkpoint exported to \texttt{weights.h}.
+For accuracy tests, MNIST images are provided as binary input files; for performance benchmarks, the workload runs inference over the loaded test set and terminates via \texttt{m5\_exit}.
+\subsubsection{Algorithimic improvement}
+We had defined our first version in C as the "basic" version and set it as reference 
+for further improvement in the implemented algorithm.
+\\
+The changes are the following:
+\paragraph{Loop unrolling:}By analyzing the basic WaveKAN model, 
+we observed that the inner wavelet loop always iterates over a fixed 
+number of wavelets ($8$, value present in the table of previous section).
+Since this loop has a small and constant trip count, it can be safely 
+unrolled. The unrolled version reduces loop-control overhead, such as 
+loop counter increments, comparisons, and branch instructions.
+\paragraph{Polynomial approximation:}By analyzing the gem5 output of the 
+loop-unrolled model, we observed that the number of floating-point 
+instructions was still very high. This is mainly because the SiLU and 
+Mexican-hat activation functions use exponential operations( $e^{-x}$ and 
+$e^{-0.5\cdot x^2}$). The exponential function is computationally expensive, 
+so it was replaced with polynomial approximations.
+\paragraph{Loop reordering:} By analyzing the forward loop of the WaveKAN 
+layer, we observed that SiLU activation and the Mexican-hat wavelet 
+activations for each input are independent of the output feature, that 
+remains the same. Therefore, the forward loop was reordered so that the 
+SiLU value and the corresponding wavelet activations are computed only 
+once, stored in temporary buffers, and then reused when accumulating the 
+contributions for all output features.
+\subsection{Results}
+\label{subsec:Gem5_results}
+We have done several tests, with different version, to find a better 
+The \textit{\sc{Accuracies}} of our tests are stated in \textit{Section \ref{subsubsec:Gem5_accuracies}}.
+
+\subsubsection{Algorithmic improvement}
+\paragraph{Loop unrolling:} The unrolled model achieves better performance 
+than the non-unrolled one: fewer total cycles, fewer branches, and fewer 
+branch mispredictions. Cache behavior remains almost unchanged, which 
+means this optimization mainly improves control-flow overhead rather than 
+memory behavior.
+The optimization works, but the performance gain is limited because loop 
+unrolling does not solve the main bottleneck: the expensive floating-point 
+activation computations.
+\paragraph{Polynomial approximation:} Polynomial approximation removes a 
+large amount of instruction-fetch and branch overhead from the exponential 
+floating point function implementation. However, the cycle improvement is 
+limited because the emaining polynomial computation still uses dependent 
+floating-point multiply/add operations and exposes more Load Queue pressure.
+\paragraph{Loop reordering:} Loop reordering and activation reuse remove a 
+large amount of redundant work. Even if the D-cache miss rate is higher, 
+the total number of instructions and memory accesses is much lower, so the 
+final performance is significantly better.
+\subsubsection{Accuracies}
+\label{subsubsec:Gem5_accuracies}
+The implementation in C of our wavelet KAN has 
+the same accuracy as the python one if the polynomial approximation 
+is not applied. By using Taylor approximation to substitute exponential 
+functions the accuracy drastically decreased: from 87.65\% to 58.58\%. 
+This lost is due to the fact that Taylor series expansion focuses entirely 
+on minimizing error around the origin ($x$ nearly to $0$), when tested 
+with other values, this approximation generates catastrophic errors, 
+and it is shown by the accuracy to guarantee the same accuracy we 
+introduced the Chebyshev polynomial approximation, which minimizes the 
+maximum error by spreading it across the entire bounded interval. What 
+we obtained is that the approximated version has the same accuracy as 
+the original one.
+
+
+%-----------------------------------------------------------------------------
+% CONCLUSION
+%-----------------------------------------------------------------------------
+\section{Conclusions}
+\label{sec:conclusions}
+In this work, we evaluated B-spline and Wavelet Kolmogorov-Arnold Networks (KANs) 
+for image recognition tasks. Both models were implemented and compared in 
+Python. Our results show that the convolutional Wavelet KAN outperforms the 
+B-spline KAN in both accuracy and convergence speed, especially on datasets 
+requiring high detail and good generalization, such as CIFAR-10, while in MNIST the performance is similar. 
+This is because wavelet functions can simultaneously capture local and global features 
+through multi-resolution analysis, providing robustness against noise. 
+In contrast, while B-splines offer precise local control, they are more susceptible 
+to overfitting.
+In the second part of the work, we have implemented the Wavelet KAN in C and we have 
+simulated it on a RISC-V core. By applying algorithmic improvements, especially the polynomial approximation and loop reordering, 
+we have achieved a significant performance improvement, decreasing the number of cycles from 100M to 10M, for a single image,
+while maintaining the same accuracy as the Python implementation.
+
+
+%---------------------------------------------------------------------------
+%  BIBLIOGRAPHY
+%---------------------------------------------------------------------------
+% Remember to insert here only the essential bibliography of your work
+\bibliography{bibliography.bib} % automatically inserted and ordered with this command 
+
+\end{document}
