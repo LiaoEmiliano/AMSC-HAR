@@ -30,6 +30,8 @@ Makefile
 *.bin
 *.weights
 *.model
+*.mpg
+*.mp4
 data/
 
 .cache
