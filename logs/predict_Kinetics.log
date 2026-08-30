@@ -1,0 +1,108 @@
+Human Action Recognition predict log
+dataset: Kinetics
+dir: checkAcc\Kinetics
+weights: models/ucf11_videocnnBest.harw
+time: 2026-08-30 16:12:20
+Human Action Recognition using CNN
+Compute device: CPU
+Video decoder: OpenCV
+Predict: dir=checkAcc\Kinetics  weights=models/ucf11_videocnnBest.harw  size=64x64  frames=8  classes=11
+  basketball\0oMyAB1S1PY_000009_000019.mp4
+     1. tennis_swing            100.0%  miss
+     2. basketball                0.0%
+     3. volleyball_spiking        0.0%
+       label: basketball
+  basketball\18gV_5W2xIw_000165_000175.mp4
+     1. horse_riding             88.3%  miss
+     2. swing                     6.9%
+     3. biking                    2.0%
+       label: basketball
+  basketball\Lb8vLWzzSA4_000041_000051.mp4
+     1. volleyball_spiking       85.0%  miss
+     2. trampoline_jumping        8.6%
+     3. basketball                4.8%
+       label: basketball
+  basketball\sdjf7vF971g_001710_001720.mp4
+     1. volleyball_spiking       82.0%  miss
+     2. swing                    15.9%
+     3. trampoline_jumping        1.3%
+       label: basketball
+  basketball\yDLJZ1yfJoY_000003_000013.mp4
+     1. swing                    51.4%  miss
+     2. trampoline_jumping       15.2%
+     3. volleyball_spiking       13.3%
+       label: basketball
+  biking\ok3K3sCv6b0_000002_000012.mp4
+     1. trampoline_jumping       37.1%  miss
+     2. swing                    35.8%
+     3. diving                   17.1%
+       label: biking
+  diving\FMoZ3vX1br8_000009_000019.mp4
+     1. horse_riding             67.0%  miss
+     2. basketball               27.3%
+     3. diving                    2.5%
+       label: diving
+  diving\S-G9FFm2xo8_000009_000019.mp4
+     1. basketball               70.0%  miss
+     2. soccer_juggling          17.4%
+     3. biking                    7.7%
+       label: diving
+  diving\mEHDQb2_z5k_000001_000011.mp4
+     1. biking                   32.6%  miss
+     2. diving                   29.8%
+     3. walking                  15.7%
+       label: diving
+  golf_swing\svjk8NtHBZo_000002_000012.mp4
+     1. horse_riding             31.2%  miss
+     2. basketball               23.7%
+     3. golf_swing               23.2%
+       label: golf_swing
+  horse_riding\DpIirKLvdeQ_000059_000069.mp4
+     1. swing                    33.7%  miss
+     2. golf_swing               17.4%
+     3. biking                    9.9%
+       label: horse_riding
+  horse_riding\R3BAON2UysY_000010_000020.mp4
+     1. horse_riding             62.2%  ok
+     2. walking                  29.0%
+     3. biking                    6.8%
+  swing\h5cZOSOVlCM_000000_000010.mp4
+     1. soccer_juggling          40.3%  miss
+     2. basketball               17.6%
+     3. golf_swing               16.2%
+       label: swing
+  tennis_swing\NLZuCbnuF-c_000220_000230.mp4
+     1. basketball               51.4%  miss
+     2. diving                   38.9%
+     3. biking                    6.7%
+       label: tennis_swing
+  tennis_swing\mU_aPd0BsJc_000000_000010.mp4
+     1. basketball               47.1%  miss
+     2. tennis_swing             42.0%
+     3. biking                    8.2%
+       label: tennis_swing
+  tennis_swing\ma7UszE8wqA_000428_000438.mp4
+     1. biking                   42.7%  miss
+     2. basketball               22.0%
+     3. horse_riding             17.6%
+       label: tennis_swing
+  tennis_swing\y0YW7mn6LxU_000001_000011.mp4
+     1. tennis_swing             88.0%  ok
+     2. soccer_juggling           7.2%
+     3. basketball                3.6%
+  walking\8intWipTVGU_000004_000014.mp4
+     1. walking                  52.1%  ok
+     2. soccer_juggling          33.9%
+     3. basketball                5.7%
+  walking\EBRUUr2vxmk_000007_000017.mp4
+     1. biking                   76.5%  miss
+     2. walking                  19.5%
+     3. swing                     1.4%
+       label: walking
+  walking\bWAw5BazRy0_000160_000170.mp4
+     1. swing                    91.1%  miss
+     2. biking                    5.6%
+     3. soccer_juggling           1.0%
+       label: walking
+done: 20 video(s), labeled 3/20 (15.0%)
+

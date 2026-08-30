@@ -19,6 +19,7 @@ void print_usage() {
   har_cnn extract <video> [outdir]
   har_cnn train [--dataset ucf101|ucf11] --data <root> [options]
   har_cnn predict [--dir checkAcc] [--weights PATH] [--top K]
+  har_cnn eval [--dataset ucf11] [--data PATH] [--weights PATH] [--split test]
 
 Train options:
   --dataset NAME      ucf101 (default) or ucf11
@@ -48,6 +49,14 @@ Predict options:
   --dir PATH          Folder of videos to classify. Default: checkAcc
   --weights PATH      Checkpoint to load. Default: models/ucf11_videocnn.harw
   --top K             Print top-K classes. Default: 3
+
+Eval options:
+  --dataset NAME      ucf11 (default) or ucf101
+  --data PATH         Video root. Default: data/UCF11_updated_mpg
+  --weights PATH      Checkpoint to load. Default: models/ucf11_videocnnBest.harw
+  --split NAME        test (default), val, or train
+  --batch N           Default: 16
+  --seed N            UCF11 hold-out seed. Default: 42
 
 Download UCF101 (recommended HAR dataset):
   powershell -ExecutionPolicy Bypass -File scripts/download_ucf101.ps1
@@ -335,6 +344,40 @@ auto run_predict(int argc, char **argv) -> int {
   return har::train::run_predict(cfg);
 }
 
+auto run_eval(int argc, char **argv) -> int {
+  har::train::EvalConfig cfg;
+  for (int i = 2; i < argc; ++i) {
+    const std::string_view arg = argv[i];
+    auto need = [&](const char *name) -> std::string {
+      if (i + 1 >= argc) {
+        throw std::runtime_error(std::string("Missing value for ") + name);
+      }
+      return argv[++i];
+    };
+    if (arg == "--dataset") {
+      cfg.dataset = need("--dataset");
+    } else if (arg == "--dir" || arg == "--data") {
+      cfg.data_root = need("--data");
+    } else if (arg == "--weights") {
+      cfg.weights_path = need("--weights");
+    } else if (arg == "--split") {
+      cfg.split = need("--split");
+    } else if (arg == "--batch") {
+      cfg.batch_size = static_cast<size_t>(std::stoul(need("--batch")));
+    } else if (arg == "--workers") {
+      cfg.num_workers = static_cast<size_t>(std::stoul(need("--workers")));
+    } else if (arg == "--seed") {
+      cfg.seed = static_cast<unsigned>(std::stoul(need("--seed")));
+    } else if (arg == "--help" || arg == "-h") {
+      print_usage();
+      return 0;
+    } else {
+      throw std::runtime_error("Unknown argument: " + std::string(arg));
+    }
+  }
+  return har::train::run_eval(cfg);
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -371,6 +414,9 @@ int main(int argc, char **argv) {
     }
     if (cmd == "predict" || cmd == "check") {
       return run_predict(argc, argv);
+    }
+    if (cmd == "eval" || cmd == "test") {
+      return run_eval(argc, argv);
     }
     // Backward compatible: har_cnn <video> [outdir]
     if (argc >= 2) {
