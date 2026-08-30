@@ -221,3 +221,20 @@ inline auto run_predict(const PredictConfig &cfg) -> int {
 }
 
 } // namespace har::train
+
+namespace har::train {
+struct EvalConfig {
+  std::string dataset{"ucf11"};
+  std::string data_root;
+  std::string weights_path;
+  std::string split{"test"};
+  size_t batch_size{16};
+  size_t num_workers{0};
+  unsigned seed{42};
+};
+
+inline auto run_eval(const EvalConfig &) -> int {
+  std::cerr << "eval is not implemented yet.\n";
+  return 1;
+}
+}

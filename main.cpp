@@ -15,7 +15,6 @@ namespace {
 void print_usage() {
   std::cout <<
       R"(Usage:
-  har_cnn smoke
   har_cnn extract <video> [outdir]
   har_cnn train [--dataset ucf101|ucf11] --data <root> [options]
   har_cnn predict [--dir checkAcc] [--weights PATH] [--top K]
@@ -66,99 +65,6 @@ Download UCF11:
 )";
 }
 
-auto run_cnn_smoke_test() -> int {
-  std::cout << "Smoke test: tiny CNN on synthetic NCHW images\n";
-  std::cout << std::format("Device: {}\n", har::device_name());
-
-  constexpr size_t batch = 32;
-  constexpr size_t epochs = 80;
-  constexpr size_t H = 16;
-  constexpr size_t W = 16;
-
-  har::network::Sequential<float> model;
-  model.add(std::make_unique<har::layers::Conv2D<float>>(1, 4, 3, 1, 1));
-  model.add(std::make_unique<har::layers::ReLU<float>>());
-  model.add(std::make_unique<har::layers::MaxPool2D<float>>(2));
-  model.add(std::make_unique<har::layers::Flatten<float>>());
-  model.add(std::make_unique<har::layers::Linear<float>>(4 * 8 * 8, 2));
-  model.train();
-
-  har::loss::CrossEntropyLoss<float> criterion;
-  har::optim::SGD<float> optimizer(0.05f);
-
-  std::mt19937 gen{7};
-  std::uniform_real_distribution<float> noise(0.0f, 0.3f);
-
-  har::Tensor<float> x({batch, 1, H, W});
-  har::Tensor<float> y({batch});
-
-  float first_loss = 0.0f;
-  float last_loss = 0.0f;
-
-  for (size_t epoch = 0; epoch < epochs; ++epoch) {
-    for (size_t n = 0; n < batch; ++n) {
-      const bool label = (n % 2 == 0);
-      y[n] = label ? 1.0f : 0.0f;
-      for (size_t h = 0; h < H; ++h) {
-        for (size_t w = 0; w < W; ++w) {
-          float v = noise(gen);
-          const bool center = (h >= 4 && h < 12 && w >= 4 && w < 12);
-          if (label && center) {
-            v += 0.7f;
-          }
-          if (!label && !center) {
-            v += 0.7f;
-          }
-          x.at(n, 0, h, w) = v;
-        }
-      }
-    }
-
-    x.sync();
-    y.sync();
-
-    model.zero_grad();
-    auto logits = model.forward(x);
-    const float loss = criterion.forward(logits, y);
-    auto grad = criterion.backward();
-    model.backward(grad);
-    optimizer.step(model.parameters());
-
-    if (epoch == 0) {
-      first_loss = loss;
-    }
-    last_loss = loss;
-
-    if (epoch % 20 == 0 || epoch + 1 == epochs) {
-      std::cout << std::format("epoch {:>3}  loss = {:.4f}\n", epoch, loss);
-    }
-  }
-
-  model.eval();
-  auto logits = model.forward(x);
-  logits.sync();
-  size_t correct = 0;
-  for (size_t i = 0; i < batch; ++i) {
-    const size_t pred = logits.at(i, 0) > logits.at(i, 1) ? 0 : 1;
-    if (pred == static_cast<size_t>(y[i])) {
-      ++correct;
-    }
-  }
-
-  const float acc = static_cast<float>(correct) / static_cast<float>(batch);
-  std::cout << std::format("train loss: {:.4f} -> {:.4f}\n", first_loss,
-                           last_loss);
-  std::cout << std::format("eval accuracy: {:.1f}% ({}/{})\n", acc * 100.0f,
-                           correct, batch);
-
-  if (!(last_loss < first_loss) || acc < 0.8f) {
-    std::cout << "WARNING: CNN smoke test failed thresholds\n";
-    return 1;
-  }
-
-  std::cout << "CNN smoke test passed.\n";
-  return 0;
-}
 
 auto run_extract_frames(const std::string &video_path,
                         const std::string &output_dir) -> int {
@@ -389,14 +295,11 @@ int main(int argc, char **argv) {
 
   if (argc < 2) {
     print_usage();
-    return run_cnn_smoke_test();
+    return 1;
   }
 
   const std::string cmd = argv[1];
   try {
-    if (cmd == "smoke" || cmd == "--smoke") {
-      return run_cnn_smoke_test();
-    }
     if (cmd == "help" || cmd == "--help" || cmd == "-h") {
       print_usage();
       return 0;

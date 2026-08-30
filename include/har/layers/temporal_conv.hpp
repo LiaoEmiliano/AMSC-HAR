@@ -156,12 +156,12 @@ public:
   auto name() const -> std::string { return "TemporalConv1D"; }
 
 private:
-  static auto clamp_t(int t, size_t T) -> size_t {
+  static auto clamp_t(int t, size_t max_T) -> size_t {
     if (t < 0) {
       return 0;
     }
-    if (static_cast<size_t>(t) >= T) {
-      return T - 1;
+    if (static_cast<size_t>(t) >= max_T) {
+      return max_T - 1;
     }
     return static_cast<size_t>(t);
   }
